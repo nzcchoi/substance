@@ -106,7 +106,7 @@ We need to provide converters for all elements (title, body, paragraph, figure, 
 The following code shows the converter for the figure node type.
 
 ```js
-{
+export default {
   type: 'figure',
   tagName: 'figure',
 
@@ -142,6 +142,15 @@ export default {
     el.append(converter.annotatedText([node.id, 'content']))
   }
 
+}
+```
+
+And here's a converter that just maps the emphasis element to an emphasis node. No data is carries, so there is no need to implement import and export functions.
+
+```js
+export default {
+  type: 'subscript',
+  tagName: 'sub'
 }
 ```
 
