@@ -86,7 +86,24 @@ Next we want to populate the document with content. There are different ways to 
 
 ## Converters
 
-The next thing: Data conversion. Probably you are already using a certain data format, XML files or HTML. With Substance you can create __your own converter__ very easily:
+Substance is designed to work with XML as a data representation format. This gives you the opportunity to model a completely custom content model for your documents. Let's assume the following simple XML document.
+
+```xml
+<simple-article>
+  <title>Hello Substance</title>
+  <body>
+    <paragraph>Hello <emphasis>Substance</emphasis></paragraph>
+    <figure image-source="figure1.png">
+      <title>Figure 1</title>
+      <caption>Lorem ipsum</caption>
+    </figure>
+  </body>
+</simple-article>
+```
+
+We need to provide converters for all elements (title, body, paragraph, figure, caption). A converter simply converts from DOM elements to Substance Nodes, which are regular Javascript objects.
+
+The following code shows the converter for the figure node type.
 
 ```js
 {
@@ -94,32 +111,46 @@ The next thing: Data conversion. Probably you are already using a certain data f
   tagName: 'figure',
 
   import: function(el, node, converter) {
-    var title = el.find('.title')
-    var img = el.find('img')
-    var figcaption = el.find('figcaption')
-
-    node.title = converter.annotatedText(title, [node.id, 'title'])
-    node.img = img.attr('src')
-    node.caption = converter.annotatedText(figcaption, [node.id, 'caption'])
+    var title = el.find('title')
+    var caption = el.find('caption')
+    node.imageSource = el.attr('image-source')
+    node.title = converter.convertElement(title).id
+    node.caption = converter.convertElement(caption).id
   },
 
   export: function(node, el, converter) {
-    // title
-    el.append($$('h1').addClass('title').append(
-      converter.annotatedText([node.id, 'title']))
-    )
-    // image
-    el.append($$('img').attr('src', node.src))
-    // caption
-    el.append(
-      $$('figcaption').append(
-        converter.annotatedText([node.id, 'caption'])
-      )
-    )
-    return el
+    el.attr('image-source', node.imageSource)
+    el.append(converter.convertNode(node.title))
+    el.append(converter.convertNode(node.caption))
   }
 }
 ```
+
+And here's a converter that reads the `<title>` element and turns it into a title node.
+
+```js
+export default {
+
+  type: 'title',
+  tagName: 'title',
+
+  import: function(el, node, converter) {
+    node.content = converter.annotatedText(el, [node.id, 'content'])
+  },
+
+  export: function(node, el, converter) {
+    el.append(converter.annotatedText([node.id, 'content']))
+  }
+
+}
+```
+
+## Configurator
+
+- Why?
+- examples
+
+## DocumentSession
 
 ## Components
 
@@ -128,10 +159,7 @@ The next thing: Data conversion. Probably you are already using a certain data f
 - How to use them? What is $$?
 - Component life cycle (didMount, dispose, willReceiveProps, didUpdate)
 
-## Configurator
 
-- Why?
-- examples
 
 ## EditorSession
 
@@ -204,19 +232,3 @@ class ImageComponent extends NodeComponent {
 
 - how to configure tool panels
 - how to attach a toolbar / overlay
-
-## Tutorial: Your first editor
-
-Learn how to build a full-fledged editor.
-
-### Installation
-
-Adapt guide `doc/integrating-substance.md`.
-
-### Step 1
-
-Adapt guide `doc/your-first-editor.md` into steps.
-
-### Step 2
-
-### Step N
