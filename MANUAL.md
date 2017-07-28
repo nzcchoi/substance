@@ -2,7 +2,7 @@
 
 <!-- TODO: Add Table of Contents for quick navigation -->
 
-Substance is a __library__ for creating web-based __WYSIWIG editors__. As opposed to other existing editors, such as TinyMCE, Aloha, etc. Substance is __not__ just __a widget__ you include into your web-application. It is designed to build advanced word processors (comparable to Google Docs). 
+Substance is a __library__ for creating web-based __WYSIWIG editors__. As opposed to other existing web editors, such as TinyMCE, Aloha, etc. Substance is __not__ just __a widget__ you include into your web-application. It is designed to build advanced word processors (comparable to Google Docs) from scratch.
 
 The unique point of Substance is __Customizability__. You can __customize everything__, starting from the content model, to the rendering, to the toolbars and overlays or keyboard shortcuts. 
 
