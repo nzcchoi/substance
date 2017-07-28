@@ -12,24 +12,77 @@ This document explains the major concepts of Substance and help you get started 
 
 ## Document Model
 
-It begins with the data. For instance, a scientific article is more complex than a blog post. Still there is some similarity. Both of them have paragraphs, for instance. In Substance you __define a schema__, containing a set of Node descriptions.
+<!-- It begins with the data. For instance, a scientific article is more complex than a blog post. Still there is some similarity. Both of them have paragraphs, for instance. In Substance you __define a schema__, containing a set of Node descriptions. -->
+
+TODO: Needs simple intro.
+
+This is how you define a node type:
 
 ```js
-var Figure = BlockNode.extend();
+class Heading extends TextBlock {}
 
-Figure.static.name = "figure";
-
-Figure.static.defineSchema({
-  "title": "text",
-  "img": "src",
-  "caption": "text"
-})
+Heading.schema = {
+  type: "heading",
+  level: { type: "number", default: 1 }
+}
 ```
 
-- Introduction to Substance documents
-- Define a new document schema
-- Define a new node type
-- insert data (e.g. create new node, show/hide content in the body)
+### Node Classes
+
+When you add support for a new element, you have to choose a Substance node type. Use this check list to find out what kind of element it is.
+
+#### TextBlock
+
+- Does the element contain annotated text?
+- Is it part of a container? (can be moved around)
+
+Example elements: `<paragraph>`, `<heading>`
+
+#### PropertyAnnotation
+
+- Is the element used for formatting, highlighting?
+- Can the cursor move inside the element, changing its text?
+
+Example elements: `<strong>`, `<emphasis>`, `<hyperlink>`
+
+#### InlineNode
+
+- Does the element behave like a single text character in the text flow?
+- Is the element content generated (e.g. a label)?
+- Is the element content a graphic?
+- Is the content of the node immutable to text editing and can only be deleted as a whole?
+
+Example elements: `<xref>`
+
+#### Container
+
+- Does the element define a sequence of nodes?
+- Can the order of the nodes be changed by the user?
+
+#### DocumentNode
+
+- Does your element not fit into any of the previous types?
+- Is your element a block image?
+- Is your element a table?
+
+### Define a schema
+
+```js
+let schema =  new DocumentSchema({
+  name: 'simple-article',
+  DocumentClass: Document,
+  defaultTextType: 'paragraph'
+})
+this.schema.addNodes([Title, Body, Paragraph])
+```
+
+### Create an empty document instance
+
+```js
+let doc = new Document(schema)
+```
+
+Next we want to populate the document with content. There are different ways to it, but the recommended way is writing converters.
 
 ## Converters
 
