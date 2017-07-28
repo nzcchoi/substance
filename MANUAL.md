@@ -149,8 +149,8 @@ And here's a converter that just maps the emphasis element to an emphasis node. 
 
 ```js
 export default {
-  type: 'subscript',
-  tagName: 'sub'
+  type: 'emphasis',
+  tagName: 'emphasis'
 }
 ```
 
