@@ -152,29 +152,66 @@ export default {
 }
 ```
 
+To import the above XML snippet we also need converters for `<simple-article>`, `<body>` and `<paragraph>`. To put it all together we create an instance of XMLImporter and provide schema plus converters.
+
+
+```js
+let importer = new XMLImporter({
+  schema: schema,
+  converters: [
+    SimpleArticleConverter,
+    TitleConverter,
+    BodyConverter,
+    ParagraphConverter,
+    FigureConverter
+  ]
+})
+
+let doc = importer.importDocument(xmlString)
+```
+
 ## Configurator and Substance Packages
 
-Substance editors are configured and extended via packges. Modules define package files, which are interpreted by a configurator. Here's an example `FigurePackage.js`:
+Substance editors are configured using a simple `Configurator` API. For instance you can define what node types are available, which converters should be used and define components which are used for display and content interaction.
+
+
+```js
+let config = new Configurator()
+config.addNode(Figure)
+config.addNode(Paragraph)
+config.addNode(Title)
+config.addConverter('xml', TitleConverter)
+config.addConverter('xml', ParagraphConverter)
+config.addConverter('xml', FigureConverter)
+
+config.defineSchema({
+  name: 'simple-article',
+  ArticleClass: Document,
+  defaultTextType: 'paragraph'
+})
+```
+
+You can also make your editor exensible by defining packages, which can then be imported by the configurator API. Here's an example `FigurePackage.js`:
+
 
 ```js
 export default {
   name: 'figure',
   configure: function(config) {
     config.addNode(Figure)
-    config.addConverter('xml', FigureXMLConverter)
+    config.addConverter('xml', FigureConverter)
   },
   Figure,
   FigureConverter
 }
 ```
 
-The `config` parameter is a `Configurator` instance, which provides a basic API for configuring Substance editors. In your app usage is like so:
+And here's how it is imported.
 
 ```js
-let configurator = new Configurator()
-configurator.import(
+let config = new Configurator()
+config.import(FigurePackage)
 ```
-
 
 
 ## DocumentSession
