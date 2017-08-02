@@ -172,7 +172,7 @@ let doc = importer.importDocument(xmlString)
 
 ## Configurator and Substance Packages
 
-Substance editors are configured using a simple `Configurator` API. For instance you can define what node types are available, which converters should be used and define components which are used for display and content interaction.
+Substance editors are configured using a simple `Configurator` API. For instance you can define what node types are available or which converters should be used.
 
 
 ```js
