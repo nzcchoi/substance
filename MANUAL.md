@@ -57,11 +57,15 @@ Example elements: `<xref>`
 - Does the element define a sequence of nodes?
 - Can the order of the nodes be changed by the user?
 
+Example elements: `<body>`
+
 #### DocumentNode
 
 - Does your element not fit into any of the previous types?
 - Is your element a block image?
 - Is your element a table?
+
+Example elements: `<figure>`, `<table>`
 
 ### Define a schema
 
