@@ -6,7 +6,7 @@ Substance is a __library__ for creating web-based __WYSIWIG editors__. As oppose
 
 The unique point of Substance is __Customizability__. You can __customize everything__, starting from the content model, to the rendering, to the toolbars and overlays or keyboard shortcuts. 
 
-This document explains the major concepts of Substance and help you get started with development. Please note, that not all features are covered in full detail. We are working on complete API docs for version 2.0. Please look at the comments in the source code for full API reference.
+This document explains the major concepts of Substance and help you get started with development. Please note, that not all features are documented in full detail. We are working on complete API docs for version 2.0. Until then, please look at the comments in the source code for a full API reference.
 
 ## Document Model
 
@@ -152,10 +152,30 @@ export default {
 }
 ```
 
-## Configurator
+## Configurator and Substance Packages
 
-- Why?
-- examples
+Substance editors are configured and extended via packges. Modules define package files, which are interpreted by a configurator. Here's an example `FigurePackage.js`:
+
+```js
+export default {
+  name: 'figure',
+  configure: function(config) {
+    config.addNode(Figure)
+    config.addConverter('xml', FigureXMLConverter)
+  },
+  Figure,
+  FigureConverter
+}
+```
+
+The `config` parameter is a `Configurator` instance, which provides a basic API for configuring Substance editors. In your app usage is like so:
+
+```js
+let configurator = new Configurator()
+configurator.import(
+```
+
+
 
 ## DocumentSession
 
