@@ -11,11 +11,7 @@ This document explains the major concepts of Substance and help you get started 
 * [Converters](#converters)
 * [Configurator and Substance Packages](#configurator-and-substance-packages)
 * [Components](#components)
-  * [Component lifecycle](#component-lifecycle)
-  * [Dependency Injection](#dependency-injection)
 * [Editor Session](#editor-session)
-  * [Selection](#selection)
-  * [Transactions](#transactions)
 * [Commands](#commands)
 * [Keyboard Shortcuts](#keyboard-shortcuts)
 * [Setting up an Editor](#setting-up-an-editor)
@@ -463,15 +459,25 @@ There are two types of text selections:
   })
   ```
 
-
 ### Transactions
 
-- how to start a new transaction to manipulate a document
+All document manipulation must be done through a transaction. This ensures that a change is an atomic operation, that can be undone and redone. To create a heading at the current selection in Substance you can do this.
 
-### CommandStates
+```js
+editorSession.transaction((tx) => {
+  let node = tx.insertBlockNode({
+    type: 'heading',
+    level: 1
+  })
+  tx.setSelection({
+    type: 'property',
+    path: node.getPath(),
+    startOffset: 0
+  })
+})
+```
 
-- what are they used for?
-- how can new commands be defined?
+First we create a block node at the current selection, then we set the selection to the start of that new heading node.
 
 ### Update Stages and Resources
 
@@ -516,9 +522,62 @@ class ImageComponent extends NodeComponent {
 }
 ```
 
+## Commands
 
+In Substance you can define Command classes for each action you want to run on the document. For instance you want to register commands for toggling annotations (`strong`, `emphasis`, `hyperlink`) or creating a new block node (e.g. a `figure` or a table). The interface looks like this.
+
+```js
+class MyCommand extends Command {
+  getCommandState(params, context) {
+    // determine commandState based on params and context
+  }
+
+  execute(params, context) {
+    // perform operations on the document
+  }
+}
+```
+
+Commands need to be registered using the configurator before they can take effect.
+
+```js
+config.addCommand('heading1', SwitchTextTypeCommand, {
+  spec: { type: 'heading', level: 1 },
+  commandGroup: 'text-types'
+})
+```
+
+### Keyboard Shortcuts
+
+```js
+config.addKeyboardShortcut('CommandOrControl+Alt+1', { command: 'heading1' })
+```
+
+## Setting up an Editor
+
+- describe how to implement editor based on AbstractEditor
+- how to run it
 
 ## Toolbars and Overlays
+
+```js
+config.addToolPanel('toolbar', [
+  {
+    name: 'text-types',
+    type: 'tool-dropdown',
+    showDisabled: false,
+    style: 'descriptive',
+    commandGroups: ['text-types']
+  },
+  {
+    name: 'annotations',
+    type: 'tool-group',
+    showDisabled: true,
+    style: 'minimal',
+    commandGroups: ['annotations']
+  }
+])
+```
 
 - how to configure tool panels
 - how to attach a toolbar / overlay
