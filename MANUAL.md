@@ -1,20 +1,47 @@
-# Substance
+# Substance Developer's Manual
 
-<!-- TODO: Add Table of Contents for quick navigation -->
+Substance is a __library__ for creating web-based content editors. As opposed to other existing web editors, Substance is __not__ just __a widget__ you include into your web-application. It is designed to build advanced word processors (comparable to Google Docs) from scratch.
 
-Substance is a __library__ for creating web-based __WYSIWIG editors__. As opposed to other existing web editors, such as TinyMCE, Aloha, etc. Substance is __not__ just __a widget__ you include into your web-application. It is designed to build advanced word processors (comparable to Google Docs) from scratch.
+The unique point of Substance is __Customizability__. You can __customize everything__, starting from the content model, to the rendering, to the toolbars and overlays or keyboard shortcuts.
 
-The unique point of Substance is __Customizability__. You can __customize everything__, starting from the content model, to the rendering, to the toolbars and overlays or keyboard shortcuts. 
+This document explains the major concepts of Substance and help you get started with development.
 
-This document explains the major concepts of Substance and help you get started with development. Please note, that not all features are documented in full detail. We are working on complete API docs for version 2.0. Until then, please look at the comments in the source code for a full API reference.
+* [Quick Start](#quick-start)
+* [Document Model](#document-model)
+* [Converters](#converters)
+* [Configurator and Substance Packages](#configurator-and-substance-packages)
+* [Components](#components)
+  * [Component lifecycle](#component-lifecycle)
+  * [Dependency Injection](#dependency-injection)
+* [Editor Session](#editor-session)
+  * [Selection](#selection)
+  * [Transactions](#transactions)
+* [Commands](#commands)
+* [Keyboard Shortcuts](#keyboard-shortcuts)
+* [Setting up an Editor](#setting-up-an-editor)
+* [Toolbars and Overlays](#toolbars-and-overlays)
+
+*Please note, that not all features are documented in full detail. We are working on complete API docs for version 2.0. Until then, please look at the [comments in the source code](https://github.com/substance/substance/blob/master/ui/Component.js#L7) for a full API reference.*
+
+
+## Quick Start
+
+Install and run the `example-editor` application to try out Substance.
+
+```bash
+$ git clone https://github.com/substance/simple-writer.git
+```
+
+```bash
+$ npm install
+$ npm start
+```
+
+While you are reading this manual, look for the described concepts in the `example-editor` code.
 
 ## Document Model
 
-<!-- It begins with the data. For instance, a scientific article is more complex than a blog post. Still there is some similarity. Both of them have paragraphs, for instance. In Substance you __define a schema__, containing a set of Node descriptions. -->
-
-TODO: Needs simple intro.
-
-This is how you define a node type:
+It begins with the data. In Substance you __define a schema__, containing a set of Node descriptions for paragraphs, headings, etc.
 
 ```js
 class Heading extends TextBlock {}
@@ -84,7 +111,7 @@ this.schema.addNodes([Title, Body, Paragraph])
 let doc = new Document(schema)
 ```
 
-Next we want to populate the document with content. There are different ways to it, but the recommended way is writing converters.
+Next we want to populate the document with content. There are different ways to do it, but the recommended way is writing converters.
 
 ## Converters
 
@@ -178,25 +205,41 @@ let doc = importer.importDocument(xmlString)
 
 Substance editors are configured using a simple `Configurator` API. For instance you can define what node types are available or which converters should be used.
 
+```js
+let configurator = new Configurator()
+configurator.addNode(Figure)
+configurator.addNode(Paragraph)
+configurator.addNode(Title)
+configurator.addConverter('xml', TitleConverter)
+configurator.addConverter('xml', ParagraphConverter)
+configurator.addConverter('xml', FigureConverter)
+```
+
+The Configurator API also helps us with registering the schema. Note, that we did this manually (`new DocumentSchema()`) in the Document Model section.
 
 ```js
-let config = new Configurator()
-config.addNode(Figure)
-config.addNode(Paragraph)
-config.addNode(Title)
-config.addConverter('xml', TitleConverter)
-config.addConverter('xml', ParagraphConverter)
-config.addConverter('xml', FigureConverter)
-
-config.defineSchema({
+configurator.defineSchema({
   name: 'simple-article',
-  ArticleClass: Document,
+  DocumentClass: Document,
   defaultTextType: 'paragraph'
 })
 ```
 
-You can also make your editor exensible by defining packages, which can then be imported by the configurator API. Here's an example `FigurePackage.js`:
+Now we are able to create an empty doc by utilizing the configurator.
 
+```js
+let emptyDoc = configurator.createDocument()
+```
+
+The configurator also helps us creating an importer instance.
+
+```js
+configurator.addImporter('xml', XMLImporter)
+let xmlImporter = cfg.createImporter('xml')
+let doc = xmlImporter.importDocument(xmlString)
+```
+
+You can make your editor extensible by defining packages, which can then be imported by the configurator API. Here's an example `FigurePackage.js`:
 
 ```js
 export default {
@@ -204,38 +247,222 @@ export default {
   configure: function(config) {
     config.addNode(Figure)
     config.addConverter('xml', FigureConverter)
-  },
-  Figure,
-  FigureConverter
+  }
 }
 ```
 
-And here's how it is imported.
+And here's how it is imported:
 
 ```js
-let config = new Configurator()
-config.import(FigurePackage)
+let configurator = new Configurator()
+configurator.import(FigurePackage)
 ```
-
-
-## DocumentSession
 
 ## Components
 
-- Introduction to Components
-- Similar to React
-- How to use them? What is $$?
-- Component life cycle (didMount, dispose, willReceiveProps, didUpdate)
+Substance uses a light-weight component implementation inspired by [React](https://facebook.github.io/react/). In contrast to React, we use synchronous rendering and a more minimalistic life-cycle. It also provides *up-tree* communication and *dependency injection*. Otherwise the idea is pretty much the same, so it may also be a good idea to look at the React documentation for better understanding the underlying concepts.
+
+Here's how you can define a simple Component:
+
+```js
+class HelloMessage extends Component {
+  render($$) {
+    return $$('div').append(
+      'Hello ',
+      this.props.name
+    )
+  }
+}
+```
+
+And mount it to a DOM Element:
+
+```js
+HelloMessage.mount({name: 'John'}, document.body)
+```
+
+Note that every component must implement a render method that returns a virtual element. The argument `$$` is a function used to construct elements. Elements can be regular HTML elements (`<div>`, `<span>` etc.) or components (`HelloMessage`). Here's an example of an `App` component that creates a `HelloMessage` element.
 
 
+```js
+class App extends Component {
+  render($$) {
+    return $$('div').append(
+      $$(HelloMessage, {name: 'John'})
+    )
+  }
+}
+```
+
+Now we can mount the App component instead.
+
+```js
+App.mount(document.body)
+```
+
+### Props
+
+`props` are provided by a parent component.  An initial set of properties is provided
+via constructor. After that, the parent component can call `setProps` or `extendProps`
+to update these properties which triggers rerendering if the properties change.
+
+### State
+
+`state` is a set of flags and values which are used to control how the component
+gets rendered given the current props. Using `setState` the component can change
+its internal state, which leads to a rerendering if the state changes.
+Prefer using `extendState` rather than `setState`.
+
+Normally, a component maintains its own state. It isn't recommended that a
+parent pass in or update state. If you find the need for this, you should be
+looking at `props`.
+
+State would be useful in situations where the component itself controls some
+aspect of rendering. Eg. whether a dropdown is open or not could be a state
+within the dropdown component itself since no other component needs to know
+it.
+
+### Refs
+
+A child component with a `ref` id will be reused on rerender. All others will be
+wiped and rerender from scratch. If you want to preserve a grand-child (or lower), then
+make sure that all anchestors have a ref id. After rendering the child will be
+accessible via `this.refs[ref]`.
+
+### Component lifecycle
+
+- `didMount` is called when the element is inserted into the DOM. Typically, you can use this to set up subscriptions to changes in the document or in a node of your interest. Remember to unsubscribe from all changes in the `dispose` method otherwise listeners you have attached may be called without a context.
+
+  ```js
+  class MyComponent extends Component {
+    didMount() {
+      this.context.editorSession.onRender('document', this.rerender, this, {
+        path: [this.props.node.id, 'label']
+      })
+    }
+
+    dispose() {
+      this.context.editorSession.off(this)
+    }
+  }
+  ```
+
+- `didUpdate` is called after state or props have been updated and the implied rerender is completed.
+
+- `dispose` is called when the component is unmounted, i.e. removed from DOM, hence disposed. Remember to unsubscribe all change listeners here.
+
+- `willReceiveProps` is called before properties are updated. Use this to dispose objects which will be replaced when properties change.
+For example you can use this to derive state from props.
+
+- `willUpdateState` is called before the state is changed
+
+### Actions
+
+A component can send actions via `send` which are bubbled up through all parent
+components until one handles it.
+
+```js
+  class ChildComponent extends Component {
+    render($$) {
+      return $$('div').append(
+        $$('button').append('Send hello')
+          .on('click', this._sendMessage)
+      )
+    }
+
+    _sendMessage() {
+      this.send('message', 'Hello')
+    }
+  }
+```
+
+A component declares that it can handle an action by calling the `handleActions` method on itself in the constructor or
+the `didMount` lifecycle hook.
+
+```js
+class GrandParentComponent Component {
+  didMount() {
+    this.handleActions('message', this._handleMessage)
+  }
+
+  _handleMessage(message) {
+    console.info('Message Received:', message)
+  }
+  ...
+}
+```
+
+## Dependency Injection
+
+We provide a dependency injection mechanism. This allows allows passing down information to all child components. Use dependency injection with care, you don't want your components to depend on a whole lot of infrastructure.
+
+You can use it like so:
+
+```js
+class A extends Component {
+  getChildContext() {
+    editorSession: this.props.editorSession
+  }
+
+  render($$) {
+    return $$(B)
+  }
+}
+
+class B extends Component {
+  render($$) {
+    // this.context.editorSession is available here
+  }
+}
+```
+
+Keep in mind you should never provide mutable data via dependency injection. Pass only references to objects that don't change during the life time of the parent component that introduced the child context.
 
 ## EditorSession
 
-- used to manipulate a document
+The `EditorSession` is the heart of your editor. It provides an interface for manipulating documents in a transactional way and allows to subscribe to a number of events. For instance you can get notified when the user changed the selection, or made a change to the document. On construction it takes a `document` and a `configurator`.
+
+```js
+let editorSession = new EditorSession(doc, {
+  configurator: config
+})
+```
 
 ### Selection
 
-- Explain difference between property selection vs. container selection.
+The EditorSession maintains a user selection, which you can always query like so:
+
+```js
+let sel = editorSession.getSelection()
+```
+
+There are two types of text selections:
+
+- `PropertySelection` is bound to a text property, e.g. when you select text inside a paragraph or heading. You can create it programmatically like so.
+
+  ```js
+  let propSel = doc.createSelection({
+    type: 'property',
+    path: ['p1', 'content'],
+    startOffset: 3,
+    endOffset: 6
+  })
+  ```
+
+- `ContainerSelection` can span over multiple paragraphs, it is always related to a container (e.g. `<body>`)
+
+  ```js
+  sel = editorSession.createSelection({
+    type: 'container',
+    startPath: ['p1', 'content'],
+    startOffset: 0,
+    endPath: ['p3', 'content'],
+    endOffset: 6,
+    containerId: 'body',
+    surfaceId: 'body'
+  })
+  ```
+
 
 ### Transactions
 
@@ -289,12 +516,7 @@ class ImageComponent extends NodeComponent {
 }
 ```
 
-## Dependency Injection
 
-- why?
-- how to use it?
-- why can it be dangerous?
-- never provide mutable data via DI (final static)
 
 ## Toolbars and Overlays
 
