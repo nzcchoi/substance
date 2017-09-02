@@ -93,7 +93,7 @@ function buildLib(target, production) {
       ]
     }
   }
-  if (target === 'legacy') {
+  if (target === 'browser:legacy') {
     config.buble = true
   }
   if (production) {
